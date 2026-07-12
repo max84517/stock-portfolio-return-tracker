@@ -1,0 +1,74 @@
+// Prisma schema for the portfolio backtest dashboard.
+// Enums are modeled as validated strings (not Prisma `enum`) to keep the
+// SQLite schema simple; valid values are enforced in the application layer
+// (see src/lib/types.ts).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Strategy {
+  id              String   @id @default(cuid())
+  name            String
+  startDate       DateTime
+  endDate         DateTime
+  displayCurrency String   @default("USD")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  holdings Holding[]
+}
+
+model Holding {
+  id       String @id @default(cuid())
+  strategyId String
+  strategy   Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  ticker         String
+  market         String // "US" | "TW"
+  amount         Float // one-time amount for LUMP_SUM, per-period amount for DCA
+  amountCurrency String // "USD" | "TWD"
+
+  investMode   String // "LUMP_SUM" | "DCA"
+  dcaFrequency String? // "MONTHLY" | "WEEKLY" (only used when investMode = "DCA")
+
+  dividendMode      String // "CASH" | "REINVEST_FULL" | "REINVEST_PERCENT" | "REINVEST_FIXED"
+  dividendModeParam Float?
+
+  @@index([strategyId])
+}
+
+model PriceCache {
+  id     String   @id @default(cuid())
+  ticker String
+  date   DateTime
+  close  Float
+
+  @@unique([ticker, date])
+  @@index([ticker])
+}
+
+model DividendCache {
+  id     String   @id @default(cuid())
+  ticker String
+  date   DateTime
+  amount Float
+
+  @@unique([ticker, date])
+  @@index([ticker])
+}
+
+model FxCache {
+  id   String   @id @default(cuid())
+  pair String // e.g. "USDTWD"
+  date DateTime
+  rate Float
+
+  @@unique([pair, date])
+  @@index([pair])
+}
