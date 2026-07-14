@@ -13,8 +13,9 @@ export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
-    // Increase transaction timeout to 30s to accommodate Yahoo Finance API delays
-    transactionOptions: { isolationLevel: "Serializable", timeout: 30000 },
+    // Increase transaction timeout to 60s to accommodate Yahoo Finance API delays
+    // in cloud environments with higher network latency
+    transactionOptions: { isolationLevel: "Serializable", timeout: 60000 },
   });
 
 if (process.env.NODE_ENV !== "production") {
