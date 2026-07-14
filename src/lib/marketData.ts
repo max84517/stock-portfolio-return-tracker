@@ -123,8 +123,13 @@ const FX_PAIR = "USDTWD";
 
 /** Daily USD/TWD rate (1 USD = rate TWD) for the requested range. */
 export async function getUsdTwdHistory(start: Date, end: Date): Promise<PricePoint[]> {
+  // Extend the fetch range to ensure better forward-fill coverage at boundaries.
+  // Yahoo Finance FX data may have gaps on weekends/holidays, so extra padding helps.
+  const extendedStart = new Date(start.getTime() - 60 * DAY_MS);
+  const extendedEnd = new Date(end.getTime() + 60 * DAY_MS);
+
   const cached = await prisma.fxCache.findMany({
-    where: { pair: FX_PAIR, date: { gte: start, lte: end } },
+    where: { pair: FX_PAIR, date: { gte: extendedStart, lte: extendedEnd } },
     orderBy: { date: "asc" },
   });
   const cachedPrices = cached.map((r) => ({ date: toISODate(r.date), close: r.rate }));
@@ -132,7 +137,7 @@ export async function getUsdTwdHistory(start: Date, end: Date): Promise<PricePoi
     return cachedPrices;
   }
 
-  const prices = await fetchUsdTwdFx(start, end);
+  const prices = await fetchUsdTwdFx(extendedStart, extendedEnd);
   const deduped = dedupeByDate(prices);
   if (deduped.length > 0) {
     await prisma.$transaction(

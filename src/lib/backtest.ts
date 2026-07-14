@@ -126,7 +126,11 @@ async function simulateHolding(
   const fx = (date: string): number => {
     const rate = fxByDate(date);
     if (rate === undefined) {
-      throw new Error(`Missing USD/TWD rate for ${date}`);
+      throw new Error(
+        `Missing USD/TWD rate for ${date}. ` +
+        `This usually means the FX data range is incomplete. ` +
+        `Try using a more recent start date or checking your date range.`
+      );
     }
     return rate;
   };
